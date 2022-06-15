@@ -44,6 +44,22 @@ async function run() {
 			.collection("bookings");
 
 		const userCollection = client.db("doctors-portal").collection("users");
+		const doctorCollection = client
+			.db("doctors-portal")
+			.collection("doctors");
+
+		//verify admin
+		const verifyAdmin = async (req, res, next) => {
+			const requester = req.decoded.email;
+			const requesterAccount = await userCollection.findOne({
+				email: requester,
+			});
+			if (requesterAccount.role == "admin") {
+				next();
+			} else {
+				res.status(403).send({ message: "Forbidden" });
+			}
+		};
 
 		//put user informtion
 		app.put("/user/:email", async (req, res) => {
@@ -68,13 +84,13 @@ async function run() {
 			res.send({ result, token });
 		});
 		//put user admin information
-		app.put("/user/admin/:email", verifyJWT, async (req, res) => {
-			const email = req.params.email;
-			const requester = req.decoded.email;
-			const requesterAccount = await userCollection.findOne({
-				email: requester,
-			});
-			if (requesterAccount.role == "admin") {
+		app.put(
+			"/user/admin/:email",
+			verifyJWT,
+			verifyAdmin,
+			async (req, res) => {
+				const email = req.params.email;
+
 				const filter = { email: email };
 				const updatedUser = {
 					$set: { role: "admin" },
@@ -84,10 +100,8 @@ async function run() {
 					updatedUser
 				);
 				res.send(result);
-			} else {
-				res.status(403).send({ message: "Forbidden" });
 			}
-		});
+		);
 
 		//get admin data
 		app.get("/admin/:email", verifyJWT, async (req, res) => {
@@ -105,8 +119,7 @@ async function run() {
 
 		//get service data
 		app.get("/service", async (req, res) => {
-			const query = {};
-			const cursor = serviceCollection.find(query);
+			const cursor = serviceCollection.find({}).project({ name: 1 });
 			const result = await cursor.toArray();
 			res.send(result);
 		});
@@ -163,6 +176,17 @@ async function run() {
 			});
 
 			res.send(services);
+		});
+		//add doctor information
+		app.post("/doctor", verifyJWT, verifyAdmin, async (req, res) => {
+			const doctor = req.body;
+			const result = await doctorCollection.insertOne(doctor);
+			res.send(result);
+		});
+		//get doctor information
+		app.get("/doctor", verifyJWT, verifyAdmin, async (req, res) => {
+			const doctor = await doctorCollection.find().toArray();
+			res.send(doctor);
 		});
 	} finally {
 	}
