@@ -54,7 +54,7 @@ async function run() {
 			const requesterAccount = await userCollection.findOne({
 				email: requester,
 			});
-			if (requesterAccount.role == "admin") {
+			if (requesterAccount.role === "admin") {
 				next();
 			} else {
 				res.status(403).send({ message: "Forbidden" });
@@ -185,8 +185,14 @@ async function run() {
 		});
 		//get doctor information
 		app.get("/doctor", verifyJWT, verifyAdmin, async (req, res) => {
-			const doctor = await doctorCollection.find().toArray();
-			res.send(doctor);
+			const result = await doctorCollection.find({}).toArray();
+			res.send(result);
+		});
+		//delete doctor information
+		app.get("/doctor/:email", verifyJWT, verifyAdmin, async (req, res) => {
+			const email = req.params.email;
+			const result = await doctorCollection.deleteOne({ email: email });
+			res.send(result);
 		});
 	} finally {
 	}
