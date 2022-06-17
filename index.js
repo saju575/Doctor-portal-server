@@ -189,11 +189,18 @@ async function run() {
 			res.send(result);
 		});
 		//delete doctor information
-		app.get("/doctor/:email", verifyJWT, verifyAdmin, async (req, res) => {
-			const email = req.params.email;
-			const result = await doctorCollection.deleteOne({ email: email });
-			res.send(result);
-		});
+		app.delete(
+			"/doctor/:email",
+			verifyJWT,
+			verifyAdmin,
+			async (req, res) => {
+				const email = req.params.email;
+				const result = await doctorCollection.deleteOne({
+					email: email,
+				});
+				res.send(result);
+			}
+		);
 	} finally {
 	}
 }
